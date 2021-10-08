@@ -1,7 +1,7 @@
 function Waypoint(x, y) {
     this.x = x;
     this.y = y;
-    this.vx = 15;
+    this.vx = 0;
     this.vy = 0;
 
 
@@ -41,4 +41,34 @@ function Waypoint(x, y) {
     this.handleClicked = function() {
         console.log("This")
     }
+
+    this.getPosVector = function() {
+        return [this.x, this.y];
+    }
+
+    this.getVelVector = function() {
+        return [this.vx, this.vy];
+    }
+
+    this.getNormalizedVelocity = function() {
+        let mag = this.getVMagnitude();
+        let normXV = this.vx / mag;
+        let normYV = this.vy / mag;
+        return [normXV, normYV]
+    }
+
+    this.getVMagnitude = function() {
+        return Math.sqrt(this.vx**2 + this.vy**2);
+    }
+
+    this.getX = function() {return this.x}
+    this.getY = function() {return this.y}
+    this.getVX = function() {return this.vx}
+    this.getVY = function() {return this.vy}
+
+    this.setX = function(X) {this.x = X}
+    this.setY = function(Y) {this.y = Y}
+    this.setVX = function(VX) {this.vx = VX}
+    this.setVY = function(VY) {this.vy = VY}
+
 }
