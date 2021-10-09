@@ -22,7 +22,6 @@ function Splines(waypoints) {
             let newVals = hermiteSplines(this.wp[i], this.wp[i+1])
             newPairs = newPairs.concat(newVals);
         }
-        console.log("Concatted Splines")
         this.isCharted = true;
         this.valuePairs = newPairs;
     }
@@ -73,5 +72,13 @@ function Splines(waypoints) {
 
         hiddenElement.click();
  
+    }
+
+    this.getValuePairs = function() {
+        return this.valuePairs;
+    }
+
+    this.getSplineLength = () => {
+        return motionUtil.getSplineLength(this.valuePairs)
     }
 }

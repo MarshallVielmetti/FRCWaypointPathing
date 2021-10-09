@@ -3,6 +3,8 @@ let waypoints = [];
 let selectedInd;
 let spline;
 let doSpline = false;
+let doAnimateRobot = false;
+let animateIndex;
 
 
 //Dom elements
@@ -11,13 +13,20 @@ let YInput;
 let VXInput;
 let VYInput;
 
+let gameDropdown;
+let splineDropdown;
+
 let nameInput;
 
 const width = 1140;
 const height = 476;
 
+let robot;
+
 function preload() {
-  bg = loadImage('deepspace.png');
+  bg = loadImage('Game Pictures/infiniterecharge.png');
+  robot = new Robot(40, 40)
+  robot.printRobot();
 } 
 
 function setup() {
@@ -30,6 +39,48 @@ function setup() {
   VXInput = createInput('');
   VYInput = createInput('');
   nameInput = createInput('Path Name');
+
+  gameDropdown = createSelect();
+  gameDropdown.option('Infinite Recharge');
+  gameDropdown.option('Deepspace');
+  gameDropdown.option('PowerUp');
+  gameDropdown.changed(handleChangeGame);
+
+  //TO DO: Implement other spline types and dropdown functionality
+  splineDropdown = createSelect();
+  splineDropdown.option('Cubic Hermite');
+  splineDropdown.option('Quintic Hermite'); // TO DO
+  gameDropdown.option('Centripetal Catmull-Roll'); // TO DO
+  gameDropdown.changed(handleChangeSpline); // TO DO
+}
+
+function handleChangeGame() {
+  switch(gameDropdown.value()) {
+    case "Infinite Recharge":
+      bg = loadImage('Game Pictures/infiniterecharge.png');
+      break;
+    case "Deepspace": 
+      bg = loadImage('Game Pictures/deepspace.png');
+      break;
+    case "PowerUp":
+      // bg = loadImage('deepspace.png');
+      break;
+    default:
+      break;
+  }
+}
+//TO DO
+function handleChangeSpline() {
+  switch(splineDropdown.value()) {
+    case 'Cubic Hermite':
+      break;
+    case 'Quintic Hermite':
+      break;
+    case 'Centripetal Catmull-Roll':
+      break;
+    default:
+      break;
+  }
 }
 
 function mousePressed() {
@@ -78,7 +129,6 @@ function mousePressed() {
 }
 
 function mouseDragged() {
-  console.log(selectedInd)
   if(selectedInd >= 0) {
     waypoints[selectedInd].updateVelocity(mouseX, mouseY)
   }
@@ -94,6 +144,16 @@ function draw() {
     spline.graph();
   }
 
+  if (doAnimateRobot) {
+    let valuePairs = spline.getValuePairs();
+    robot.drawRobot(valuePairs[animateIndex][0], valuePairs[animateIndex][1], valuePairs[animateIndex+1][0], valuePairs[animateIndex+1][1])
+    ++animateIndex;
+    if (animateIndex >= valuePairs.length - 1) {
+      doAnimateRobot = false;
+      robot.clearRobot();
+    }
+  }
+
   // if (selectedInd >= 0 && !mouseIsPressed) {
   //   waypoints[selectedInd].setX(XInput.value())
   //   waypoints[selectedInd].setY(YInput.value())
@@ -103,24 +163,31 @@ function draw() {
 }
 
 function keyPressed() {
-  //Yes I know this should be a switch statement sue me
-  if (keyCode == 32) {
-    //SPACEBAR = CLEAR
-    background(bg);
-    waypoints = [];
-    doSpline = false;
-  } else if (keyCode == 13) {
-    //ENTER = RUN SPLINES
-
+  switch(keyCode) {
+    case 32: //Spacebar = Clear
+      background(bg);
+      waypoints = [];
+      doSpline = false;
+      break;
+    case 13: //Enter = Generate Splines
     //obviously make it check
-    spline = new Splines(waypoints);
-    spline.concatSplines();
-    doSpline = true;
-    // spline.calcSpline();
-  } else if (keyCode == 83) {
-    spline.exportPathing(nameInput.value());
-  } else {
-    //do nothing
-    console.log(keyCode)
+      spline = new Splines(waypoints);
+      spline.concatSplines();
+      doSpline = true;
+      break;
+    case 83: // S = Save Splines
+      spline.exportPathing(nameInput.value());
+      break;
+    case 65: // A = Animate Robot
+      console.log(spline.getSplineLength());
+      doAnimateRobot = true;
+      animateIndex = 0;
+      break;
+    case 81: // Q = temp query v
+      motionUtil.queryVelocityCurve(8, 400, 5, 20);
+      break;
+    default:
+      console.log(keyCode)
+      break;
   }
 }
