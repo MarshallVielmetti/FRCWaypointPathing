@@ -1,6 +1,9 @@
 function Robot(width, height) {
     this.w = width; //robot width
     this.h = height; //robot height
+
+    this.x
+
     this.cornerPoints = [];
 
     this.drawRobot = function(curX, curY, nextX, nextY) {
