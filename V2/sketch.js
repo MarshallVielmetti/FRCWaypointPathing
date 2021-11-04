@@ -1,6 +1,4 @@
 let bgImg;
-let waypoints = [];
-let selectedInd;
 let spline;
 let doSpline = false;
 let doAnimateRobot = false;
@@ -43,6 +41,8 @@ function setup() {
   VYInput = createInput("");
   VYInput.input(updateSelectedWaypoint);
   nameInput = createInput("Path Name");
+  posInput = createInput("");
+  posInput.input(updateSelectedWaypoint);
 
   gameDropdown = createSelect();
   gameDropdown.option("Infinite Recharge");
@@ -59,6 +59,11 @@ function setup() {
 
   // newWaypointButton = createButton("New Waypoint")
   deleteWaypointButton = createButton("Delete Waypoint");
+  deleteWaypointButton.mousePressed(handleDeleteWaypoint);
+}
+
+function handleDeleteWaypoint() {
+  Waypoint.selectedWaypoint.deleteWaypoint();
 }
 
 function handleChangeGame() {
@@ -92,65 +97,61 @@ function handleChangeSpline() {
 }
 
 function updateDomInputs() {
-  if (selectedWaypoint !== null) {
-    XInput.value(selectedWaypoint.x);
-    YInput.value(selectedWaypoint.y);
-    VXInput.value(selectedWaypoint.vx);
-    VYInput.value(selectedWaypoint.vy);
+  if (Waypoint.selectedWaypoint !== null) {
+    XInput.value(Waypoint.selectedWaypoint.x);
+    YInput.value(Waypoint.selectedWaypoint.y);
+    VXInput.value(Waypoint.selectedWaypoint.vx);
+    VYInput.value(Waypoint.selectedWaypoint.vy);
+    posInput.value(Waypoint.selectedWaypoint.getWaypointPosition());
   } else {
     XInput.value(0);
     YInput.value(0);
     VXInput.value(0);
     VYInput.value(0);
+    posInput.value(-1);
   }
 }
 
 function updateSelectedWaypoint() {
-  if (selectedWaypoint === null) return;
+  if (Waypoint.selectedWaypoint === null) return;
 
-  selectedWaypoint.x = Number(XInput.value());
-  selectedWaypoint.y = Number(YInput.value());
-  selectedWaypoint.vx = Number(VXInput.value());
-  selectedWaypoint.vy = Number(VYInput.value());
+  Waypoint.selectedWaypoint.x = Number(XInput.value());
+  Waypoint.selectedWaypoint.y = Number(YInput.value());
+  Waypoint.selectedWaypoint.vx = Number(VXInput.value());
+  Waypoint.selectedWaypoint.vy = Number(VYInput.value());
+  Waypoint.selectedWaypoint.setWaypointPosition(Number(posInput.value()));
 }
 
 function mousePressed() {
-  console.log(mouseX + " " + mouseY);
   if (mouseX < 0 || mouseY < 0 || mouseX > width || mouseY > height) {
     // selectedWaypoint = null;
     return;
   }
 
   if (keyIsDown(16)) {
-    console.log("Dragging Velocity");
     return;
   } //currently dragging velocity
+  Waypoint.selectedWaypoint = Waypoint.getClicked(mouseX, mouseY);
 
-  console.log("Got Through");
-
-  selectedWaypoint = Waypoint.getClicked(mouseX, mouseY);
-
-  if (selectedWaypoint === null) {
-    console.log("New Waypoint");
+  if (Waypoint.selectedWaypoint === null) {
     let wp = new Waypoint(mouseX, mouseY);
-    selectedWaypoint = wp;
+    Waypoint.selectedWaypoint = wp;
   }
   updateDomInputs();
 }
 
 function mouseDragged() {
-  if (selectedWaypoint === null) return;
+  if (Waypoint.selectedWaypoint === null) return;
 
-  //ERROR IS HERE - CHECKIGN IF CLICKED WHEN UPDATING VELOCITY ALL TIMES
-  if (selectedWaypoint.wasClicked(mouseX, mouseY)) {
-    if (keyIsDown(16)) {
-      selectedWaypoint.vx = selectedWaypoint.x - mouseX;
-      selectedWaypoint.vy = selectedWaypoint.y - mouseY;
-    } else {
-      selectedWaypoint.x = mouseX;
-      selectedWaypoint.y = mouseY;
+  if (keyIsDown(16)) {
+    Waypoint.selectedWaypoint.vx = mouseX - Waypoint.selectedWaypoint.x;
+    Waypoint.selectedWaypoint.vy = mouseY - Waypoint.selectedWaypoint.y;
+  } else {
+    if (Waypoint.selectedWaypoint.wasClicked(mouseX, mouseY)) {
+      Waypoint.selectedWaypoint.x = mouseX;
+      Waypoint.selectedWaypoint.y = mouseY;
+      updateDomInputs();
     }
-    updateDomInputs();
   }
 }
 
@@ -180,7 +181,6 @@ function keyPressed() {
       spline.exportPathing(nameInput.value());
       break;
     case 65: // A = Animate Robot
-      console.log(spline.getSplineLength());
       doAnimateRobot = true;
       animateIndex = 0;
       break;

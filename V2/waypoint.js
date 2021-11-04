@@ -22,11 +22,14 @@ class Waypoint {
   display = () => {
     if (this === Waypoint.selectedWaypoint) {
       stroke("yellow");
+      fill("yellow");
+    } else if (this.getWaypointPosition() === 0) {
+      stroke("green");
+      fill("green");
     } else {
       stroke("orange");
+      fill("orange");
     }
-
-    fill("orange");
     ellipse(this.x, this.y, 15, 15);
     stroke("red");
     strokeWeight(4);
@@ -40,6 +43,7 @@ class Waypoint {
   };
 
   setWaypointPosition = (newPos) => {
+    if (newPos === this.getWaypointPosition) return;
     Waypoint.wp.splice(this.getWaypointPosition(), 1);
     Waypoint.wp.splice(newPos, 0, this);
     return newPos;
@@ -60,6 +64,7 @@ class Waypoint {
 
   deleteWaypoint = () => {
     Waypoint.wp.splice(this.getWaypointPosition(), 1);
+    Waypoint.selectedWaypoint = null;
   };
 
   getPosVector = () => {
