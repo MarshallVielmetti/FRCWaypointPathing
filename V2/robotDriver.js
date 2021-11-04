@@ -1,26 +1,23 @@
-import Spline from "spline";
 
 class RobotDriver {
-    WIDTH = 20;
-    HEIGHT = 20;
+    //Uses the framework described http://www.cs.columbia.edu/~allen/F17/NOTES/icckinematics.pdf to understand motion
+    WIDTH = 20; //l - width between wheels
+    theta;//Angle WRT X Axis
+    x; //X Position of Center of Robot
+    y; //Y Position of Center of Robot
+
+    //Wheel Motion Planning
+    wheelV = new Vector(); //x is left wheel velocity, y is right wheel velocity
+    wheelA = new Vector();
+    wheelJ = new Vector();
+
+    dt = 0.1; //change in time / step
+
+    t; //for tracking purposes
 
     CONSTRAINTS;
     SPLINE;
     PATH;
-
-    x; //X Position of Center of Robot
-    y; //Y Position of Center of Robot
-    t; //time into simulation
-
-    tstep = 0.1;
-
-    //Orientation Vector (Magnitude 1)
-    orientation = new Vector();
-
-    //Wheel Motion Planning
-    wheelV = new Vector();
-    wheelA = new Vector();
-    wheelJ = new Vector();
 
     constructor(spline, constraints) {
         this.CONSTRAINTS = constraints;
@@ -42,6 +39,20 @@ class RobotDriver {
 
     }
 
+    calcForwardKinematics = () => {
+        let omega = this.getOmega();
+
+        let ICC = this.getIcc()
+        let transformMatrix = [[cos(omega * this.dt), -sin(omega*this.dt), 0], [sin(omega*this.dt), cos(omega * this.dt), 0], [0, 0, 1]]
+        let changeMatrix = [[x - ICC[0]], [y - ICC[1]], [this.theta]]
+        let ICCMatrix = [[ICC[0]], [ICC[1]], [omega*this.dt]]
+
+        //[[x`], [y`], [theta`]] = transformMtrix*changeMatrix + ICCMatrix
+        let dPosition = this.multiplyMatrices(transformMatrix, changeMatrix)
+        dPosition = this.addColumnVectors(dPosition, ICCMatrix);
+        return dPosition;
+    }
+
     driveStep = () => {
         this.t += this.tstep;
 
@@ -49,7 +60,7 @@ class RobotDriver {
 
         lookaheadDistance = this.calculateSlowdown();
 
-        
+
     }
 
     calculateSlowdown = () => {
@@ -82,5 +93,60 @@ class RobotDriver {
         vecUtil.vecToLine(backRightCorner, scaledVec)
         stroke('red')
         vecUtil.vecToLine([curX, curY], scaledVec)
+    }
+
+
+    //returns R from center to ICC
+    getR = () => {
+        let VL = wheelV.x;
+        let VR = wheelV.y;
+
+        return (WIDTH / 2) * (VL + VR)/(VR-VL)
+    }
+
+
+    //Returns angular velocity (?) about ICC / instantaneous center of rotation
+    getOmega = () => {
+        let VL = wheelV.x;
+        let VR = wheelV.y;
+
+        return (VR - VL) / WIDTH;
+    }
+
+    getICC = () => {
+        let R = this.getR();
+        let perpendicularVector = new Vector([1, -cos(theta) / sin(theta)])
+        perpendicularVector = perpendicularVector.getToMagnitude(R);
+        let ICCx = this.x + perpendicularVector.x;
+        let ICCy = this.y + perpendicularVector.y;
+
+        return new Vector([ICCx, ICCy])
+    }
+
+    //UTILITY FUNCTION I SHOULD MOVE TO ANOTHER CLASS
+
+    multiplyMatrices = (m1, m2) => {
+        var result = [];
+        for (var i = 0; i < m1.length; i++) {
+            result[i] = [];
+            for (var j = 0; j < m2[0].length; j++) {
+                var sum = 0;
+                for (var k = 0; k < m1[0].length; k++) {
+                    sum += m1[i][k] * m2[k][j];
+                }
+                result[i][j] = sum;
+            }
+        }
+        return result;
+    }
+
+    addColumnVectors = (v1, v2) => {
+        if (v1.length !== v2.length)
+            return -1;
+        
+        let result = [];
+        for (let i = 0; i < v1.length; i++) {
+            result[i][0] = v1[i][0] + v2[i][0];
+        }
     }
 }

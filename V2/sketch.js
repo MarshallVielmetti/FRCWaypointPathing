@@ -1,4 +1,4 @@
-let bg;
+let bgImg;
 let waypoints = [];
 let selectedInd;
 let spline;
@@ -6,61 +6,68 @@ let doSpline = false;
 let doAnimateRobot = false;
 let animateIndex;
 
-
 //Dom elements
 let XInput;
 let YInput;
 let VXInput;
 let VYInput;
+let posInput;
 
 let gameDropdown;
 let splineDropdown;
+let newWaypointButton;
+let deleteWaypointButton;
 
 let nameInput;
 
 const width = 1140;
 const height = 476;
 
-let robot;
+let dragV;
 
 function preload() {
-  bg = loadImage('Game Pictures/infiniterecharge.png');
-  robot = new Robot(40, 40)
-  robot.printRobot();
-} 
+  bgImg = loadImage("Game Pictures/infiniterecharge.png");
+}
 
 function setup() {
   // put setup code here
-  createCanvas(1140, 476);
-  background(bg);
-  
-  XInput = createInput('');
-  YInput = createInput('');
-  VXInput = createInput('');
-  VYInput = createInput('');
-  nameInput = createInput('Path Name');
+  createCanvas(bgImg.width, bgImg.height);
+  background(bgImg);
+
+  XInput = createInput("");
+  XInput.input(updateSelectedWaypoint);
+  YInput = createInput("");
+  YInput.input(updateSelectedWaypoint);
+  VXInput = createInput("");
+  VXInput.input(updateSelectedWaypoint);
+  VYInput = createInput("");
+  VYInput.input(updateSelectedWaypoint);
+  nameInput = createInput("Path Name");
 
   gameDropdown = createSelect();
-  gameDropdown.option('Infinite Recharge');
-  gameDropdown.option('Deepspace');
-  gameDropdown.option('PowerUp');
+  gameDropdown.option("Infinite Recharge");
+  gameDropdown.option("Deepspace");
+  gameDropdown.option("PowerUp");
   gameDropdown.changed(handleChangeGame);
 
   //TO DO: Implement other spline types and dropdown functionality
   splineDropdown = createSelect();
-  splineDropdown.option('Cubic Hermite');
-  splineDropdown.option('Quintic Hermite'); // TO DO
-  gameDropdown.option('Centripetal Catmull-Roll'); // TO DO
+  splineDropdown.option("Cubic Hermite");
+  splineDropdown.option("Quintic Hermite"); // TO DO
+  gameDropdown.option("Centripetal Catmull-Roll"); // TO DO
   gameDropdown.changed(handleChangeSpline); // TO DO
+
+  // newWaypointButton = createButton("New Waypoint")
+  deleteWaypointButton = createButton("Delete Waypoint");
 }
 
 function handleChangeGame() {
-  switch(gameDropdown.value()) {
+  switch (gameDropdown.value()) {
     case "Infinite Recharge":
-      bg = loadImage('Game Pictures/infiniterecharge.png');
+      bgImg = loadImage("Game Pictures/infiniterecharge.png");
       break;
-    case "Deepspace": 
-      bg = loadImage('Game Pictures/deepspace.png');
+    case "Deepspace":
+      bgImg = loadImage("Game Pictures/deepspace.png");
       break;
     case "PowerUp":
       // bg = loadImage('deepspace.png');
@@ -68,111 +75,105 @@ function handleChangeGame() {
     default:
       break;
   }
+  resizeCanvas(bgImg.width, bgImg.height);
 }
 //TO DO
 function handleChangeSpline() {
-  switch(splineDropdown.value()) {
-    case 'Cubic Hermite':
+  switch (splineDropdown.value()) {
+    case "Cubic Hermite":
       break;
-    case 'Quintic Hermite':
+    case "Quintic Hermite":
       break;
-    case 'Centripetal Catmull-Roll':
+    case "Centripetal Catmull-Roll":
       break;
     default:
       break;
   }
 }
 
+function updateDomInputs() {
+  if (selectedWaypoint !== null) {
+    XInput.value(selectedWaypoint.x);
+    YInput.value(selectedWaypoint.y);
+    VXInput.value(selectedWaypoint.vx);
+    VYInput.value(selectedWaypoint.vy);
+  } else {
+    XInput.value(0);
+    YInput.value(0);
+    VXInput.value(0);
+    VYInput.value(0);
+  }
+}
+
+function updateSelectedWaypoint() {
+  if (selectedWaypoint === null) return;
+
+  selectedWaypoint.x = Number(XInput.value());
+  selectedWaypoint.y = Number(YInput.value());
+  selectedWaypoint.vx = Number(VXInput.value());
+  selectedWaypoint.vy = Number(VYInput.value());
+}
+
 function mousePressed() {
+  console.log(mouseX + " " + mouseY);
   if (mouseX < 0 || mouseY < 0 || mouseX > width || mouseY > height) {
+    // selectedWaypoint = null;
     return;
   }
-  selectedInd = -1;
-  //make sure there are even waypoints to loop through
-  if (waypoints.length > 0) {
-    for (let i = 0; i < waypoints.length; i++) {
-      if (waypoints[i].wasClicked(mouseX, mouseY)) {
-        selectedInd = i;
-        waypoints[i].handleClicked(); 
 
-        XInput.value(waypoints[selectedInd].getX())
-        YInput.value(waypoints[selectedInd].getY())
-        VXInput.value(waypoints[selectedInd].getVX())
-        VYInput.value(waypoints[selectedInd].getVY())
-        return;
-      }
-    }
-  }
-  //if none of the waypoints were clicked
-  //create a new waypoint
-  if (waypoints.length > 0) {
-    selectedInd = waypoints.length;
-  } else {
-    selectedInd = 0;
-  }
-  waypoints.push(new Waypoint(mouseX, mouseY));
+  if (keyIsDown(16)) {
+    console.log("Dragging Velocity");
+    return;
+  } //currently dragging velocity
 
-  if (selectedInd == -1) {
-    //clear custom boxes
-    XInput.value(0)
-    YInput.value(0)
-    VXInput.value(0)
-    VYInput.value(0)
-  } else {
-    XInput.value(waypoints[selectedInd].getX())
-    YInput.value(waypoints[selectedInd].getY())
-    VXInput.value(waypoints[selectedInd].getVX())
-    VYInput.value(waypoints[selectedInd].getVY())
+  console.log("Got Through");
+
+  selectedWaypoint = Waypoint.getClicked(mouseX, mouseY);
+
+  if (selectedWaypoint === null) {
+    console.log("New Waypoint");
+    let wp = new Waypoint(mouseX, mouseY);
+    selectedWaypoint = wp;
   }
-  
-  return false;
+  updateDomInputs();
 }
 
 function mouseDragged() {
-  if(selectedInd >= 0) {
-    waypoints[selectedInd].updateVelocity(mouseX, mouseY)
+  if (selectedWaypoint === null) return;
+
+  //ERROR IS HERE - CHECKIGN IF CLICKED WHEN UPDATING VELOCITY ALL TIMES
+  if (selectedWaypoint.wasClicked(mouseX, mouseY)) {
+    if (keyIsDown(16)) {
+      selectedWaypoint.vx = selectedWaypoint.x - mouseX;
+      selectedWaypoint.vy = selectedWaypoint.y - mouseY;
+    } else {
+      selectedWaypoint.x = mouseX;
+      selectedWaypoint.y = mouseY;
+    }
+    updateDomInputs();
   }
 }
 
 function draw() {
-  background(bg);
-    for (let i = 0; i < waypoints.length; i++) {
-      waypoints[i].display();
-  }
+  background(bgImg);
+  Waypoint.drawAll();
 
   if (doSpline) {
-    spline.graph();
+    spline.recalculate(Waypoint.wp);
+    spline.drawSpline();
   }
-
-  if (doAnimateRobot) {
-    let valuePairs = spline.getValuePairs();
-    robot.drawRobot(valuePairs[animateIndex][0], valuePairs[animateIndex][1], valuePairs[animateIndex+1][0], valuePairs[animateIndex+1][1])
-    ++animateIndex;
-    if (animateIndex >= valuePairs.length - 1) {
-      doAnimateRobot = false;
-      robot.clearRobot();
-    }
-  }
-
-  // if (selectedInd >= 0 && !mouseIsPressed) {
-  //   waypoints[selectedInd].setX(XInput.value())
-  //   waypoints[selectedInd].setY(YInput.value())
-  //   waypoints[selectedInd].setVX(VXInput.value())
-  //   waypoints[selectedInd].setVY(VYInput.value())
-  // }
 }
 
 function keyPressed() {
-  switch(keyCode) {
+  switch (keyCode) {
     case 32: //Spacebar = Clear
-      background(bg);
+      background(bgImg);
       waypoints = [];
       doSpline = false;
       break;
     case 13: //Enter = Generate Splines
-    //obviously make it check
-      spline = new Splines(waypoints);
-      spline.concatSplines();
+      //obviously make it check
+      spline = new Spline(Waypoint.getWaypoints(), 100);
       doSpline = true;
       break;
     case 83: // S = Save Splines
@@ -186,8 +187,10 @@ function keyPressed() {
     case 81: // Q = temp query v
       motionUtil.queryVelocityCurve(8, 400, 5, 20);
       break;
+    case 17: //ctrl key, toggles drag Velocity
+    // dragV = !dragV;
     default:
-      console.log(keyCode)
+      console.log(keyCode);
       break;
   }
 }
